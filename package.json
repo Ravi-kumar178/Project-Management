@@ -1,0 +1,23 @@
+{
+  "name": "project-management",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Ravi-kumar178/Project-Management#readme",
+  "bugs": {
+    "url": "https://github.com/Ravi-kumar178/Project-Management/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ravi-kumar178/Project-Management.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "devDependencies": {
+    "prettier": "3.8.1"
+  }
+}
