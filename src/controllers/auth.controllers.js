@@ -127,29 +127,118 @@ const loginUser = asyncHandler(async (req, res) => {
 */
 
 const loggedOutUser = asyncHandler(async (req, res) => {
-  
   await User.findByIdAndUpdate(
-        req.user._id,
-        {
-          $set:{
-            refreshToken:"",
-          }
-        },
-        {
-          new: true,
-        }
-  )
+    req.user._id,
+    {
+      $set: {
+        refreshToken: "",
+      },
+    },
+    {
+      new: true,
+    },
+  );
 
   const options = {
     httpOnly: true,
-    secure: true
+    secure: true,
   };
 
   return res
     .status(200)
-    .clearCookie("accessToken",options)
-    .clearCookie("refreshToken",options)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User Logged out successfully"));
 });
 
-export { registerUser, loginUser, loggedOutUser };
+/* get current user */
+const getCurrentUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { user: user }, "User fetched successfully"));
+});
+
+/* verify email */
+const verifyEmailRequest = asyncHandler(async (req, res) => {
+  const { verificationToken } = req.params;
+  if (!verificationToken) {
+    throw new ApiError(401, "Email verification token is missing");
+  }
+
+  const token = Crypto.createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
+
+  const user = await User.findOne({
+    emailVerificationToken: token,
+    emailVerificationExpiry: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(401, "Invalid verification token");
+  }
+
+  ((user.emailVerificationToken = undefined),
+    (user.emailVerificationExpiry = undefined),
+    (user.isEmailVerified = true),
+    user.save({ validateBeforeSave: false }));
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { isEmailVerified: true },
+        "Email verified successfully",
+      ),
+    );
+});
+
+/* resend email verification */
+const resendEmailVerification = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, "user not found");
+  }
+
+  if (user.isEmailVerified) {
+    throw new ApiError(401, "Email is already verified");
+  }
+
+  const { unHashedTokens, hashedTokens, tokenExpiry } =
+    user.generateTemporaryToken();
+
+  user.emailVerificationToken = hashedTokens;
+  user.emailVerificationExpiry = tokenExpiry;
+  await user.save({ validateBeforeSave: false });
+
+  await sendMail({
+    email: user.email,
+    subject: "Verification Email",
+    mailgenContent: {
+      username: user.username,
+      verificationUrl: `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unHashedTokens}`,
+    },
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, {}, "verification mail has been sent to your email"),
+    );
+});
+
+export {
+  registerUser,
+  loginUser,
+  loggedOutUser,
+  getCurrentUser,
+  verifyEmailRequest,
+  resendEmailVerification,
+};
