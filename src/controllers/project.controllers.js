@@ -30,9 +30,9 @@ const createProject = asyncHandler(async (req, res) => {
 
 const updateProject = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
-
+  const { projectId } = req.params;
   const updatedProject = await Project.findByIdAndUpdate(
-    req.user._id,
+    projectId,
     {
       name,
       description,
@@ -52,7 +52,8 @@ const updateProject = asyncHandler(async (req, res) => {
 });
 
 const deleteProject = asyncHandler(async (req, res) => {
-  const project = await Project.findByIdAndDelete(req.user._id);
+  const { projectId } = req.params;
+  const project = await Project.findByIdAndDelete(projectId);
   if (!project) {
     throw new ApiError(404, "Project not found");
   }
@@ -61,6 +62,58 @@ const deleteProject = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, [], "Project deleted successfully"));
 });
 
+const getProjects = asyncHandler(async (req, res) => {
+  const projects = await ProjectMember.aggregate([
+    {
+      $match: {
+        user: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "projects",
+        localField: "project",
+        foreignField: "_id",
+        as: "projects",
+        pipeline: [
+          {
+            $lookup: {
+              from: "projectmembers",
+              localField: "_id",
+              foreignField: "project",
+              as: "projectmembers",
+            },
+          },
+          {
+            $addFields: {
+              members: {
+                $size: "$projectmembers",
+              },
+            },
+          },
+        ],
+      },
+    },
+    {
+      $unwind: "$projects",
+    },
+    {
+      $project: {
+        project: {
+          _id: 1,
+          name: 1,
+          description: 1,
+          members: 1,
+          createdAt: 1,
+          createdBy: 1,
+          role: 1,
+        },
+      },
+    },
+  ]);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, projects, "Project Fetched Successfully"));
+});
 
-
-export { createProject, updateProject , deleteProject};
+export { createProject, updateProject, deleteProject, getProjects };
