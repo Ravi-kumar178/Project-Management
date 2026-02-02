@@ -1,0 +1,66 @@
+import { User } from "../models/user.models.js";
+import { Project } from "../models/project.models.js";
+import { ProjectMember } from "../models/projectMember.models.js";
+
+import { asyncHandler } from "../utils/async-handler.js";
+import { ApiResponse } from "../utils/api-response.js";
+import { ApiError } from "../utils/api-error.js";
+import { UserRolesEnum } from "../utils/constants.js";
+import mongoose from "mongoose";
+
+const createProject = asyncHandler(async (req, res) => {
+  const { name, description } = req.body;
+
+  const project = await Project.create({
+    name,
+    description,
+    createdBy: new mongoose.Types.ObjectId(req.user._id),
+  });
+
+  await ProjectMember.create({
+    user: new mongoose.Types.ObjectId(req.user._id),
+    project: new mongoose.Types.ObjectId(project._id),
+    role: UserRolesEnum.ADMIN,
+  });
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, project, "Project created successfully"));
+});
+
+const updateProject = asyncHandler(async (req, res) => {
+  const { name, description } = req.body;
+
+  const updatedProject = await Project.findByIdAndUpdate(
+    req.user._id,
+    {
+      name,
+      description,
+    },
+    {
+      new: true,
+    },
+  );
+
+  if (!updateProject) {
+    throw new ApiError(404, "Project not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updateProject, "Project updated successfully"));
+});
+
+const deleteProject = asyncHandler(async (req, res) => {
+  const project = await Project.findByIdAndDelete(req.user._id);
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, [], "Project deleted successfully"));
+});
+
+
+
+export { createProject, updateProject , deleteProject};
