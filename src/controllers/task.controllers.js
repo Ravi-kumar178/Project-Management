@@ -186,7 +186,7 @@ const updateTask = asyncHandler(async (req, res) => {
 
   const { role } = req.user;
   if (role != UserRolesEnum.ADMIN && role != UserRolesEnum.PROJECT_ADMIN) {
-    throw new ApiError(`${role} is not allowed to update task`);
+    throw new ApiError(403,`${role} is not allowed to update task`);
   }
 
   const project = await Project.findById(projectId);
@@ -260,5 +260,7 @@ const deleteTask = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "Task is deleted successfully"));
 });
+
+
 
 export { createTask, getTask, getTaskById, updateTask, deleteTask };
