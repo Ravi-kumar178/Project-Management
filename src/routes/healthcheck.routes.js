@@ -5,6 +5,7 @@
  *     summary: Health check API
  *     tags:
  *       - Health
+ *     security: []
  *     responses:
  *       200:
  *         description: Server is running

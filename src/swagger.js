@@ -34,4 +34,3 @@ const options = {
 
 export const swaggerSpec = swaggerJsdoc(options);
 
-console.log("SWAGGER PATHS 👉", swaggerSpec.paths);
