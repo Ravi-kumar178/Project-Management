@@ -42,13 +42,13 @@ const updateProject = asyncHandler(async (req, res) => {
     },
   );
 
-  if (!updateProject) {
+  if (!updatedProject) {
     throw new ApiError(404, "Project not found");
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, updateProject, "Project updated successfully"));
+    .json(new ApiResponse(200, updatedProject, "Project updated successfully"));
 });
 
 const deleteProject = asyncHandler(async (req, res) => {
@@ -100,14 +100,14 @@ const getProjects = asyncHandler(async (req, res) => {
     {
       $project: {
         project: {
-          _id: 1,
-          name: 1,
-          description: 1,
-          members: 1,
-          createdAt: 1,
-          createdBy: 1,
-          role: 1,
+          _id: "$projects._id",
+          name: "$projects.name",
+          description: "$projects.description",
+          members: "$projects.members",
+          createdAt: "$projects.createdAt",
+          createdBy: "$projects.createdBy",
         },
+        role: 1,
       },
     },
   ]);
@@ -195,17 +195,11 @@ const getProjectMembers = asyncHandler(async (req, res) => {
         ],
       },
     },
-    {
-      $addFields: {
-        user: {
-          $arrayElementAt: ["$user", 0],
-        },
-      },
-    },
+    
     {
       $project: {
         project: 1,
-        user: 1,
+        user: { $arrayElemAt: ["$user", 0] },
         role: 1,
         createdAt: 1,
         updatedAt: 1,
