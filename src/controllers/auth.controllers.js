@@ -1,9 +1,14 @@
 import { User } from "../models/user.models.js";
 import { ApiResponse } from "../utils/api-response.js";
 import { ApiError } from "../utils/api-error.js";
-import { sendMail, emailVerificationMailgenContent } from "../utils/mail.js";
+import {
+  sendMail,
+  emailVerificationMailgenContent,
+  forgotPasswordMailgenContent,
+} from "../utils/mail.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import jwt from "jsonwebtoken";
+import * as Crypto from "crypto";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -222,10 +227,10 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
   await sendMail({
     email: user.email,
     subject: "Verification Email",
-    mailgenContent: {
-      username: user.username,
-      verificationUrl: `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unHashedTokens}`,
-    },
+    mailgenContent: emailVerificationMailgenContent(
+      user.username,
+      `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unHashedTokens}`,
+    ),
   });
 
   return res
@@ -237,22 +242,22 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
 
 /* refresh access token */
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
-
-  if (!refreshToken) {
+  const incomingRefreshToken  = req.cookies?.refreshToken || req.body?.refreshToken;
+  
+  if (!incomingRefreshToken ) {
     throw new ApiError(401, "unauthorized access");
   }
 
   try {
     const decodedToken = jwt.verify(
-      refreshToken,
+      incomingRefreshToken ,
       process.env.REFRESH_TOKEN_SECRET,
     );
     const user = await User.findById(decodedToken._id);
     if (!user) {
       throw new ApiError(401, "Invalid Refresh Token");
     }
-    if (refreshToken != user.refreshToken) {
+    if (incomingRefreshToken  != user.refreshToken) {
       throw new ApiError(401, "Refresh token is expired");
     }
 
@@ -305,7 +310,7 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
   await sendMail({
     email: user.email,
     subject: "Please Reset your password",
-    mailgenContent: emailVerificationMailgenContent(
+    mailgenContent: forgotPasswordMailgenContent(
       user.username,
       `${req.protocol}://${req.get("host")}/api/v1/forgot-password/${unHashedTokens}`,
     ),
@@ -386,5 +391,5 @@ export {
   refreshAccessToken,
   forgotPasswordRequest,
   resetForgottenPassword,
-  changeCurrentPassword
+  changeCurrentPassword,
 };
