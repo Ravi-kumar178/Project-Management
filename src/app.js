@@ -13,7 +13,7 @@ app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
-
+ 
 //cors configuration
 app.use(
   cors({
@@ -53,6 +53,8 @@ app.use(
 import healthCheckRoutes from "./routes/healthcheck.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import projectRoutes from "./routes/project.routes.js";
+import taskRoutes from "./routes/task.routes.js";
+import noteRoutes from "./routes/note.routes.js";
 // health check routes
 app.use("/api/v1/healthcheck", healthCheckRoutes);
 
@@ -61,6 +63,12 @@ app.use("/api/v1/auth", authRoutes);
 
 //project routes
 app.use("/api/v1/projects", projectRoutes);
+
+//task routes
+app.use("/api/v1/tasks", taskRoutes);
+
+//note routes
+app.use("/api/v1/notes", noteRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello world");

@@ -1,4 +1,4 @@
-import { Task } from "../models/task.models";
+import { Task } from "../models/task.models.js";
 import { Project } from "../models/project.models.js";
 import { Subtask } from "../models/subTask.models.js";
 import { asyncHandler } from "../utils/async-handler.js";
